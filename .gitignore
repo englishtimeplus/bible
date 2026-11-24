@@ -1,0 +1,9 @@
+# Original monolith JSON (not needed for the site)
+source/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/

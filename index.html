@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>성경</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #eef1f4;
+      --panel: #f7f8fa;
+      --ink: #1c2430;
+      --muted: #5a6574;
+      --line: #d5dde6;
+      --accent: #2f5d8a;
+      --accent-soft: #d9e6f2;
+      --verse-num: #7a8796;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Noto Sans KR", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 500px at 10% -10%, #dbe7f2 0%, transparent 55%),
+        radial-gradient(900px 400px at 100% 0%, #e4ebe3 0%, transparent 50%),
+        var(--bg);
+    }
+
+    .shell {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 3rem;
+    }
+
+    header {
+      margin-bottom: 1.25rem;
+    }
+
+    header h1 {
+      margin: 0 0 0.25rem;
+      font-family: "Noto Serif KR", serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 0.7fr;
+      gap: 0.6rem;
+      padding: 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      position: sticky;
+      top: 0.6rem;
+      z-index: 10;
+      backdrop-filter: blur(8px);
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+
+    select {
+      width: 100%;
+      padding: 0.55rem 0.6rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.92rem;
+      cursor: pointer;
+    }
+
+    select:focus {
+      outline: 2px solid var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .nav-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    button {
+      flex: 1;
+      padding: 0.65rem 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-soft);
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 1.4rem 0 0.9rem;
+      gap: 1rem;
+    }
+
+    .meta h2 {
+      margin: 0;
+      font-family: "Noto Serif KR", serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+    }
+
+    .meta span {
+      color: var(--muted);
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .verses {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .verse {
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: 0.55rem;
+      line-height: 1.75;
+      font-family: "Noto Serif KR", serif;
+      font-size: 1.05rem;
+    }
+
+    .verse .num {
+      color: var(--verse-num);
+      font-family: "Noto Sans KR", sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding-top: 0.35rem;
+      text-align: right;
+    }
+
+    .status {
+      padding: 2.5rem 1rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .status.error { color: #9b2c2c; }
+
+    @media (max-width: 560px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .verse {
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1>성경</h1>
+      <p>번역본 · 책 · 장을 선택해 읽으세요</p>
+    </header>
+
+    <div class="controls">
+      <label>
+        번역본
+        <select id="version"></select>
+      </label>
+      <label>
+        책
+        <select id="book"></select>
+      </label>
+      <label>
+        장
+        <select id="chapter"></select>
+      </label>
+    </div>
+
+    <div class="nav-row">
+      <button id="prev" type="button">← 이전 장</button>
+      <button id="next" type="button">다음 장 →</button>
+    </div>
+
+    <div class="meta">
+      <h2 id="title">불러오는 중…</h2>
+      <span id="count"></span>
+    </div>
+
+    <div id="content" class="verses">
+      <div class="status">성경 데이터를 불러오는 중입니다.</div>
+    </div>
+  </div>
+
+  <script>
+    const VERSIONS = [
+      { id: "KorHKJV", label: "한글킹제임스 (HKJV)" },
+      { id: "KorRV", label: "개역한글 (RV)" },
+    ];
+
+    const BOOK_KO = {
+      "Genesis": "창세기",
+      "Exodus": "출애굽기",
+      "Leviticus": "레위기",
+      "Numbers": "민수기",
+      "Deuteronomy": "신명기",
+      "Joshua": "여호수아",
+      "Judges": "사사기",
+      "Ruth": "룻기",
+      "I Samuel": "사무엘상",
+      "II Samuel": "사무엘하",
+      "I Kings": "열왕기상",
+      "II Kings": "열왕기하",
+      "I Chronicles": "역대상",
+      "II Chronicles": "역대하",
+      "Ezra": "에스라",
+      "Nehemiah": "느헤미야",
+      "Esther": "에스더",
+      "Job": "욥기",
+      "Psalms": "시편",
+      "Proverbs": "잠언",
+      "Ecclesiastes": "전도서",
+      "Song of Solomon": "아가",
+      "Isaiah": "이사야",
+      "Jeremiah": "예레미야",
+      "Lamentations": "예레미야애가",
+      "Ezekiel": "에스겔",
+      "Daniel": "다니엘",
+      "Hosea": "호세아",
+      "Joel": "요엘",
+      "Amos": "아모스",
+      "Obadiah": "오바댜",
+      "Jonah": "요나",
+      "Micah": "미가",
+      "Nahum": "나훔",
+      "Habakkuk": "하박국",
+      "Zephaniah": "스바냐",
+      "Haggai": "학개",
+      "Zechariah": "스가랴",
+      "Malachi": "말라기",
+      "Matthew": "마태복음",
+      "Mark": "마가복음",
+      "Luke": "누가복음",
+      "John": "요한복음",
+      "Acts": "사도행전",
+      "Romans": "로마서",
+      "I Corinthians": "고린도전서",
+      "II Corinthians": "고린도후서",
+      "Galatians": "갈라디아서",
+      "Ephesians": "에베소서",
+      "Philippians": "빌립보서",
+      "Colossians": "골로새서",
+      "I Thessalonians": "데살로니가전서",
+      "II Thessalonians": "데살로니가후서",
+      "I Timothy": "디모데전서",
+      "II Timothy": "디모데후서",
+      "Titus": "디도서",
+      "Philemon": "빌레몬서",
+      "Hebrews": "히브리서",
+      "James": "야고보서",
+      "I Peter": "베드로전서",
+      "II Peter": "베드로후서",
+      "I John": "요한1서",
+      "II John": "요한2서",
+      "III John": "요한3서",
+      "Jude": "유다서",
+      "Revelation of John": "요한계시록",
+    };
+
+    const versionEl = document.getElementById("version");
+    const bookEl = document.getElementById("book");
+    const chapterEl = document.getElementById("chapter");
+    const prevBtn = document.getElementById("prev");
+    const nextBtn = document.getElementById("next");
+    const titleEl = document.getElementById("title");
+    const countEl = document.getElementById("count");
+    const contentEl = document.getElementById("content");
+
+    const indexCache = new Map();
+    const chapterCache = new Map();
+    const chapterInflight = new Map();
+
+    let books = [];
+    let bookIndex = 0;
+    let chapterIndex = 0;
+    let loadToken = 0;
+
+    function bookLabel(name) {
+      return BOOK_KO[name] || name;
+    }
+
+    function chapterKey(versionId, bookId, chapterNum) {
+      return `${versionId}:${bookId}:${chapterNum}`;
+    }
+
+    function chapterUrl(versionId, bookId, chapterNum) {
+      return `./data/${versionId}/${bookId}/${chapterNum}.json`;
+    }
+
+    function fillSelect(el, items, selected) {
+      el.innerHTML = items
+        .map((item, i) => `<option value="${i}" ${i === selected ? "selected" : ""}>${item}</option>`)
+        .join("");
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function currentBook() {
+      return books[bookIndex];
+    }
+
+    function currentChapterNum() {
+      return currentBook().chapters[chapterIndex];
+    }
+
+    function updateNav() {
+      const atFirst = bookIndex === 0 && chapterIndex === 0;
+      const atLast =
+        bookIndex === books.length - 1 &&
+        chapterIndex === currentBook().chapters.length - 1;
+      prevBtn.disabled = atFirst;
+      nextBtn.disabled = atLast;
+    }
+
+    function syncChapterSelect() {
+      fillSelect(
+        chapterEl,
+        currentBook().chapters.map((n) => `${n}장`),
+        chapterIndex
+      );
+    }
+
+    function syncBookSelect() {
+      fillSelect(bookEl, books.map((b) => bookLabel(b.name)), bookIndex);
+    }
+
+    async function fetchJson(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+      return res.json();
+    }
+
+    async function loadIndex(versionId) {
+      if (indexCache.has(versionId)) return indexCache.get(versionId);
+      const data = await fetchJson(`./data/${versionId}/index.json`);
+      indexCache.set(versionId, data);
+      return data;
+    }
+
+    function loadChapter(versionId, bookId, chapterNum) {
+      const key = chapterKey(versionId, bookId, chapterNum);
+      if (chapterCache.has(key)) return Promise.resolve(chapterCache.get(key));
+      if (chapterInflight.has(key)) return chapterInflight.get(key);
+
+      const promise = fetchJson(chapterUrl(versionId, bookId, chapterNum))
+        .then((data) => {
+          chapterCache.set(key, data);
+          chapterInflight.delete(key);
+          return data;
+        })
+        .catch((err) => {
+          chapterInflight.delete(key);
+          throw err;
+        });
+
+      chapterInflight.set(key, promise);
+      return promise;
+    }
+
+    function neighbor(bookIdx, chIdx, delta) {
+      let b = bookIdx;
+      let c = chIdx + delta;
+      while (b >= 0 && b < books.length) {
+        const list = books[b].chapters;
+        if (c >= 0 && c < list.length) return { bookIndex: b, chapterIndex: c };
+        if (delta > 0) {
+          b += 1;
+          c = 0;
+        } else {
+          b -= 1;
+          if (b >= 0) c = books[b].chapters.length - 1;
+        }
+      }
+      return null;
+    }
+
+    function prefetchNeighbors(versionId) {
+      for (const delta of [-1, 1]) {
+        const n = neighbor(bookIndex, chapterIndex, delta);
+        if (!n) continue;
+        const book = books[n.bookIndex];
+        loadChapter(versionId, book.id, book.chapters[n.chapterIndex]).catch(() => {});
+      }
+    }
+
+    function renderChapter(chapter) {
+      const book = currentBook();
+      const ko = bookLabel(book.name);
+
+      titleEl.textContent = `${ko} ${chapter.chapter}장`;
+      countEl.textContent = `${chapter.verses.length}절`;
+      contentEl.innerHTML = chapter.verses
+        .map(
+          (v) =>
+            `<div class="verse"><span class="num">${v.verse}</span><span class="text">${escapeHtml(v.text)}</span></div>`
+        )
+        .join("");
+
+      updateNav();
+      history.replaceState(
+        null,
+        "",
+        `#${versionEl.value}/${bookIndex + 1}/${chapter.chapter}`
+      );
+    }
+
+    async function showCurrentChapter({ scroll = false } = {}) {
+      const token = ++loadToken;
+      const versionId = versionEl.value;
+      const book = currentBook();
+      const chapterNum = currentChapterNum();
+
+      titleEl.textContent = `${bookLabel(book.name)} ${chapterNum}장`;
+      countEl.textContent = "";
+      if (!chapterCache.has(chapterKey(versionId, book.id, chapterNum))) {
+        contentEl.innerHTML = `<div class="status">불러오는 중…</div>`;
+      }
+      updateNav();
+
+      try {
+        const chapter = await loadChapter(versionId, book.id, chapterNum);
+        if (token !== loadToken) return;
+        renderChapter(chapter);
+        prefetchNeighbors(versionId);
+        if (scroll) window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (err) {
+        if (token !== loadToken) return;
+        titleEl.textContent = "불러오기 실패";
+        contentEl.innerHTML = `<div class="status error">해당 장을 불러오지 못했습니다.</div>`;
+        console.error(err);
+      }
+    }
+
+    async function loadVersion(versionId, preferBook = 0, preferChapter = 1) {
+      const token = ++loadToken;
+      titleEl.textContent = "불러오는 중…";
+      countEl.textContent = "";
+      contentEl.innerHTML = `<div class="status">목차를 불러오는 중입니다.</div>`;
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+
+      try {
+        const index = await loadIndex(versionId);
+        if (token !== loadToken) return;
+
+        books = index.books;
+        bookIndex = Math.min(Math.max(preferBook, 0), books.length - 1);
+        const chapters = books[bookIndex].chapters;
+        const chNum = Math.min(Math.max(preferChapter, 1), chapters[chapters.length - 1]);
+        const found = chapters.indexOf(chNum);
+        chapterIndex = found >= 0 ? found : 0;
+
+        syncBookSelect();
+        syncChapterSelect();
+        await showCurrentChapter();
+      } catch (err) {
+        if (token !== loadToken) return;
+        titleEl.textContent = "불러오기 실패";
+        contentEl.innerHTML = `<div class="status error">데이터를 불러오지 못했습니다. 로컬 서버로 열어 주세요.<br><code>python -m http.server 8000</code></div>`;
+        console.error(err);
+      }
+    }
+
+    function goPrev() {
+      const n = neighbor(bookIndex, chapterIndex, -1);
+      if (!n) return;
+      bookIndex = n.bookIndex;
+      chapterIndex = n.chapterIndex;
+      syncBookSelect();
+      syncChapterSelect();
+      showCurrentChapter({ scroll: true });
+    }
+
+    function goNext() {
+      const n = neighbor(bookIndex, chapterIndex, 1);
+      if (!n) return;
+      bookIndex = n.bookIndex;
+      chapterIndex = n.chapterIndex;
+      syncBookSelect();
+      syncChapterSelect();
+      showCurrentChapter({ scroll: true });
+    }
+
+    function parseHash() {
+      const raw = location.hash.replace(/^#/, "");
+      if (!raw) return null;
+      const [version, book, chapter] = raw.split("/");
+      const versionIndex = VERSIONS.findIndex((v) => v.id === version);
+      if (versionIndex < 0) return null;
+      return {
+        versionIndex,
+        book: (Number(book) || 1) - 1,
+        chapter: Number(chapter) || 1,
+      };
+    }
+
+    versionEl.innerHTML = VERSIONS.map(
+      (v, i) => `<option value="${v.id}" ${i === 0 ? "selected" : ""}>${v.label}</option>`
+    ).join("");
+
+    versionEl.addEventListener("change", () => {
+      loadVersion(versionEl.value, 0, 1);
+    });
+
+    bookEl.addEventListener("change", () => {
+      bookIndex = Number(bookEl.value);
+      chapterIndex = 0;
+      syncChapterSelect();
+      showCurrentChapter({ scroll: true });
+    });
+
+    chapterEl.addEventListener("change", () => {
+      chapterIndex = Number(chapterEl.value);
+      showCurrentChapter({ scroll: true });
+    });
+
+    prevBtn.addEventListener("click", goPrev);
+    nextBtn.addEventListener("click", goNext);
+
+    document.addEventListener("keydown", (e) => {
+      if (e.target.matches("select, input, textarea")) return;
+      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") goNext();
+    });
+
+    const fromHash = parseHash();
+    if (fromHash) {
+      versionEl.value = VERSIONS[fromHash.versionIndex].id;
+      loadVersion(versionEl.value, fromHash.book, fromHash.chapter);
+    } else {
+      loadVersion(VERSIONS[0].id, 0, 1);
+    }
+  </script>
+</body>
+</html>
