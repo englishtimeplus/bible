@@ -17,6 +17,8 @@
       --accent: #2f5d8a;
       --accent-soft: #d9e6f2;
       --verse-num: #7a8796;
+      --jesus: #c62828;
+      --god: #b8860b;
     }
 
     * { box-sizing: border-box; }
@@ -171,6 +173,61 @@
       text-align: right;
     }
 
+    body.red-letter-on .verse .jesus {
+      color: var(--jesus);
+    }
+
+    body.gold-letter-on .verse .god {
+      color: var(--god);
+    }
+
+    .toggle-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+    }
+
+    .toggle-row label {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.9rem;
+      color: var(--ink);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-row input {
+      width: 1.05rem;
+      height: 1.05rem;
+      cursor: pointer;
+    }
+
+    .toggle-row input#redLetter {
+      accent-color: var(--jesus);
+    }
+
+    .toggle-row input#goldLetter {
+      accent-color: var(--god);
+    }
+
+    .toggle-row .hint {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
     .status {
       padding: 2.5rem 1rem;
       text-align: center;
@@ -218,6 +275,23 @@
       <button id="next" type="button">다음 장 →</button>
     </div>
 
+    <div class="toggle-stack">
+      <div class="toggle-row">
+        <label>
+          <input type="checkbox" id="redLetter" />
+          예수님 말씀 강조
+        </label>
+        <span class="hint">신약 · red</span>
+      </div>
+      <div class="toggle-row">
+        <label>
+          <input type="checkbox" id="goldLetter" />
+          하나님 말씀 강조
+        </label>
+        <span class="hint">구약 · gold</span>
+      </div>
+    </div>
+
     <div class="meta">
       <h2 id="title">불러오는 중…</h2>
       <span id="count"></span>
@@ -232,6 +306,7 @@
     const VERSIONS = [
       { id: "KorHKJV", label: "한글킹제임스 (HKJV)" },
       { id: "KorRV", label: "개역한글 (RV)" },
+      { id: "WEB", label: "English (WEB)" },
     ];
 
     const BOOK_KO = {
@@ -311,7 +386,11 @@
     const titleEl = document.getElementById("title");
     const countEl = document.getElementById("count");
     const contentEl = document.getElementById("content");
+    const redLetterEl = document.getElementById("redLetter");
+    const goldLetterEl = document.getElementById("goldLetter");
 
+    const RED_LETTER_KEY = "bible-red-letter";
+    const GOLD_LETTER_KEY = "bible-gold-letter";
     const indexCache = new Map();
     const chapterCache = new Map();
     const chapterInflight = new Map();
@@ -320,8 +399,25 @@
     let bookIndex = 0;
     let chapterIndex = 0;
     let loadToken = 0;
+    let currentChapterData = null;
+
+    function isRedLetterOn() {
+      return redLetterEl.checked;
+    }
+
+    function isGoldLetterOn() {
+      return goldLetterEl.checked;
+    }
+
+    function applySpeechModes() {
+      document.body.classList.toggle("red-letter-on", isRedLetterOn());
+      document.body.classList.toggle("gold-letter-on", isGoldLetterOn());
+      localStorage.setItem(RED_LETTER_KEY, isRedLetterOn() ? "1" : "0");
+      localStorage.setItem(GOLD_LETTER_KEY, isGoldLetterOn() ? "1" : "0");
+    }
 
     function bookLabel(name) {
+      if (versionEl.value === "WEB") return name;
       return BOOK_KO[name] || name;
     }
 
@@ -344,6 +440,31 @@
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;");
+    }
+
+    function renderVerseText(verse) {
+      const text = verse.text || "";
+      const spans = (Array.isArray(verse.spans) ? verse.spans : []).filter((span) => {
+        if (span.speaker === "jesus") return isRedLetterOn();
+        if (span.speaker === "god") return isGoldLetterOn();
+        return false;
+      });
+      if (!spans.length) return escapeHtml(text);
+
+      const ordered = [...spans].sort((a, b) => a.start - b.start || a.end - b.end);
+      let html = "";
+      let cursor = 0;
+      for (const span of ordered) {
+        const start = Math.max(0, Math.min(span.start, text.length));
+        const end = Math.max(start, Math.min(span.end, text.length));
+        if (start > cursor) html += escapeHtml(text.slice(cursor, start));
+        const cls = span.speaker === "jesus" || span.speaker === "god" ? span.speaker : "";
+        const chunk = escapeHtml(text.slice(start, end));
+        html += cls ? `<span class="${cls}">${chunk}</span>` : chunk;
+        cursor = end;
+      }
+      if (cursor < text.length) html += escapeHtml(text.slice(cursor));
+      return html;
     }
 
     function currentBook() {
@@ -435,6 +556,7 @@
     }
 
     function renderChapter(chapter) {
+      currentChapterData = chapter;
       const book = currentBook();
       const ko = bookLabel(book.name);
 
@@ -443,7 +565,7 @@
       contentEl.innerHTML = chapter.verses
         .map(
           (v) =>
-            `<div class="verse"><span class="num">${v.verse}</span><span class="text">${escapeHtml(v.text)}</span></div>`
+            `<div class="verse"><span class="num">${v.verse}</span><span class="text">${renderVerseText(v)}</span></div>`
         )
         .join("");
 
@@ -567,6 +689,16 @@
 
     prevBtn.addEventListener("click", goPrev);
     nextBtn.addEventListener("click", goNext);
+
+    redLetterEl.checked = localStorage.getItem(RED_LETTER_KEY) !== "0";
+    goldLetterEl.checked = localStorage.getItem(GOLD_LETTER_KEY) !== "0";
+    applySpeechModes();
+    function onSpeechToggle() {
+      applySpeechModes();
+      if (currentChapterData) renderChapter(currentChapterData);
+    }
+    redLetterEl.addEventListener("change", onSpeechToggle);
+    goldLetterEl.addEventListener("change", onSpeechToggle);
 
     document.addEventListener("keydown", (e) => {
       if (e.target.matches("select, input, textarea")) return;
