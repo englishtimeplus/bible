@@ -307,6 +307,7 @@
       { id: "KorHKJV", label: "한글킹제임스 (HKJV)" },
       { id: "KorRV", label: "개역한글 (RV)" },
       { id: "WEB", label: "English (WEB)" },
+      { id: "BSB", label: "English (BSB)" },
     ];
 
     const BOOK_KO = {
@@ -417,7 +418,7 @@
     }
 
     function bookLabel(name) {
-      if (versionEl.value === "WEB") return name;
+      if (versionEl.value === "WEB" || versionEl.value === "BSB") return name;
       return BOOK_KO[name] || name;
     }
 
